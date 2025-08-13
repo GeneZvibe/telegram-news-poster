@@ -1,5 +1,4 @@
 # Telegram News Poster
-
 An automated news aggregation system that fetches RSS feeds, filters for relevant tech topics (AI, MusicTech, XR), summarizes articles, and posts them to a Telegram channel.
 
 ## Features
@@ -56,15 +55,13 @@ sources:
     - name: "Your AI News Source"
       url: "https://example.com/ai-news/feed"
       description: "AI industry news"
-  
   musictech:
-    - name: "Your Music Tech Source" 
+    - name: "Your Music Tech Source"
       url: "https://example.com/musictech/feed"
       description: "Music production news"
-      
   xr:
     - name: "Your XR Source"
-      url: "https://example.com/xr/feed" 
+      url: "https://example.com/xr/feed"
       description: "VR/AR news"
 ```
 
@@ -87,33 +84,34 @@ keywords: List[str] = Field(
 
 ### Automatic Posting
 
-The system automatically runs daily at **15:55 UTC** (11:55 AM ET standard time) via GitHub Actions. The schedule can be modified in `.github/workflows/schedule.yml`.
+The system automatically runs daily at 15:55 UTC (11:55 AM ET standard time) via GitHub Actions. The schedule can be modified in `.github/workflows/schedule.yml`.
 
 ### Manual Execution
 
 #### Via GitHub Actions
-1. Go to the **Actions** tab in your GitHub repository
+
+1. Go to the Actions tab in your GitHub repository
 2. Select "News Poster - Manual Run"
-3. Click "Run workflow" 
+3. Click "Run workflow"
 4. Configure options:
-   - **dry_run**: Set to `true` to test without posting
-   - **force_run**: Set to `true` to run even if no new articles
+   - `dry_run`: Set to `true` to test without posting
+   - `force_run`: Set to `true` to run even if no new articles
 
 #### Local Development
 
-1. **Install dependencies:**
+1. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Set environment variables:**
+2. Set environment variables:
    ```bash
    export TELEGRAM_BOT_TOKEN="your-bot-token"
    export TELEGRAM_CHAT_ID="your-chat-id"
    export DRY_RUN="true"  # Optional: prevents actual posting
    ```
 
-3. **Run the application:**
+3. Run the application:
    ```bash
    python -m src.app.main
    ```
@@ -127,7 +125,7 @@ The system automatically runs daily at **15:55 UTC** (11:55 AM ET standard time)
 ## Configuration Options
 
 | Environment Variable | Description | Default |
-|----------------------|-------------|----------|
+|---------------------|-------------|----------|
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token | Required |
 | `TELEGRAM_CHAT_ID` | Target chat/channel ID | Required |
 | `DRY_RUN` | Test mode (no posting) | `false` |
@@ -136,14 +134,16 @@ The system automatically runs daily at **15:55 UTC** (11:55 AM ET standard time)
 
 ## Workflow Details
 
-### Scheduled Workflow (`.github/workflows/schedule.yml`)
-- **Trigger**: Daily at 15:55 UTC 
+### Scheduled Workflow (.github/workflows/schedule.yml)
+
+- **Trigger**: Daily at 15:55 UTC
 - **Features**: Automatic run with dry_run support
 - **Environment**: Uses repository secrets for tokens
 
-### Manual Workflow (`.github/workflows/manual.yml`)
+### Manual Workflow (.github/workflows/manual.yml)
+
 - **Trigger**: Manual workflow dispatch
-- **Options**: 
+- **Options**:
   - `dry_run` (boolean): Test without posting
   - `force_run` (boolean): Run even without new articles
 
@@ -151,7 +151,7 @@ The system automatically runs daily at **15:55 UTC** (11:55 AM ET standard time)
 
 1. **Fetch**: Downloads RSS feeds from configured sources
 2. **Filter**: Applies keyword matching for relevant topics
-3. **Summarize**: Creates TL;DR summaries using extractive summarization 
+3. **Summarize**: Creates TL;DR summaries using extractive summarization
 4. **Deduplicate**: Prevents reposting recent articles
 5. **Format**: Composes Telegram messages with emojis and categories
 6. **Post**: Sends individual messages for each news item to Telegram
@@ -208,6 +208,63 @@ curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe"
 4. Add tests if applicable
 5. Submit a pull request
 
+## Changelog
+
+### August 13, 2025
+
+**🔧 Technical Improvements**
+- Added Gmail UNSEEN sync for last 2 days with tech-only filtering
+- Enhanced URL validation with real-time link verification during compose
+- Expanded blocklist with newsletter/redirect trackers (SendGrid, Mailchimp, SparkPost)
+- Updated schedule: 3x daily runs at 8am/2pm/8pm ET (replacing single daily run)
+
+**⚙️ Configuration Updates**
+- DRY_RUN now defaults to `false` (was `true`)
+- FORCE_RUN defaults to `false`, set to `true` for manual override
+- Manual workflow triggers available via GitHub Actions interface
+
+## Maintainer Notes
+
+### For Future Contributors
+
+**Configuration Locations:**
+- RSS sources: `src/app/sources.yaml`
+- Keyword filters: `src/app/config.py` (keywords field)
+- Schedule timing: `.github/workflows/schedule.yml` (cron expression)
+- Environment defaults: `src/app/config.py`
+
+**Schedule Management:**
+- Current: 3x daily at `12:00`, `18:00`, `00:00` UTC (8am/2pm/8pm ET)
+- Modify cron in `.github/workflows/schedule.yml`
+- Use [crontab.guru](https://crontab.guru) for cron expression help
+
+**Managing Blocked Domains/Keywords:**
+- Blocklist: `src/app/utils.py` (BLOCKED_DOMAINS, BLOCKED_KEYWORDS)
+- Add domains: append to `BLOCKED_DOMAINS` list
+- Add keywords: append to `BLOCKED_KEYWORDS` list
+- Test changes with DRY_RUN=true
+
+**Local Development:**
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export TELEGRAM_BOT_TOKEN="your-token"
+export TELEGRAM_CHAT_ID="your-chat-id"
+export DRY_RUN="true"  # Prevents actual posting
+
+# Run locally
+python -m src.app.main
+```
+
+**Troubleshooting:**
+- **Feed issues**: Check RSS feed validity and network connectivity
+- **Gmail sync**: Verify GMAIL_CREDENTIALS and IMAP permissions
+- **Rate limits**: Telegram allows ~30 messages/minute, adjust delays in `main.py`
+- **Memory**: Large feed processing may need workflow timeout adjustment
+- **Debugging**: Enable verbose logging in `src/app/config.py`
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
@@ -220,5 +277,4 @@ For issues and questions:
 - Verify your configuration matches the examples above
 
 ---
-
 **Happy news aggregating! 🚀📰**
