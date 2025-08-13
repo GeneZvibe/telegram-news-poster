@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml
 import feedparser
 from dateutil import parser as date_parser
+
 from .config import settings, SOURCES_PATH
 from .utils import fetch_url, clean_html, hash_item
 from .summarize import create_summary
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 # Store for deduplication
 processed_articles = set()
 
+
 async def load_sources() -> Dict[str, List[Dict[str, str]]]:
     """Load RSS sources from YAML configuration."""
     try:
@@ -32,6 +34,7 @@ async def load_sources() -> Dict[str, List[Dict[str, str]]]:
     except Exception as e:
         logger.error(f"Failed to load sources: {e}")
         return {}
+
 
 async def fetch_feed_articles(feed_url: str, max_articles: int = 5) -> List[Dict[str, Any]]:
     """Fetch articles from a single RSS/Atom feed."""
@@ -83,6 +86,7 @@ async def fetch_feed_articles(feed_url: str, max_articles: int = 5) -> List[Dict
         logger.error(f"Error fetching feed {feed_url}: {e}")
         return []
 
+
 async def filter_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Filter articles by keywords and relevance."""
     filtered = []
@@ -99,6 +103,7 @@ async def filter_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]
                 break
                 
     return filtered
+
 
 async def deduplicate_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Remove duplicate articles based on content hash and URL."""
@@ -133,6 +138,7 @@ async def deduplicate_articles(articles: List[Dict[str, Any]]) -> List[Dict[str,
     
     return unique_articles
 
+
 async def compose_telegram_messages(articles: List[Dict[str, Any]]) -> List[str]:
     """Compose separate Telegram messages for each article with simplified format."""
     if not articles:
@@ -141,6 +147,17 @@ async def compose_telegram_messages(articles: List[Dict[str, Any]]) -> List[str]
     messages = []
     
     for article in articles:
+        # Revalidate article link before composing message
+        validated_link = clean_and_resolve_url(article['link'])
+        
+        # Skip article if link validation fails (None returned) or domain/path blocked
+        if validated_link is None:
+            logger.warning(f"Skipping article '{article['title']}' - link validation failed or blocked")
+            continue
+        
+        # Update article with validated link
+        article['link'] = validated_link
+        
         # Create summary
         summary = create_summary(article['description'])
         
@@ -154,6 +171,7 @@ async def compose_telegram_messages(articles: List[Dict[str, Any]]) -> List[str]
         messages.append(article_msg)
                 
     return messages
+
 
 async def send_telegram_message(message: str) -> bool:
     """Send message to Telegram channel using Bot API."""
@@ -173,7 +191,7 @@ async def send_telegram_message(message: str) -> bool:
             'chat_id': settings.telegram_chat_id,
             'text': message,
             'parse_mode': 'Markdown',
-            'disable_web_page_preview': True
+            'disable_web_page_preview': False  # Enable previews when not dry-run
         }
         
         response = requests.post(url, json=payload, timeout=30)
@@ -185,6 +203,7 @@ async def send_telegram_message(message: str) -> bool:
     except Exception as e:
         logger.error(f"Failed to send Telegram message: {e}")
         return False
+
 
 async def send_telegram_messages(messages: List[str]) -> bool:
     """Send multiple messages to Telegram channel."""
@@ -202,6 +221,7 @@ async def send_telegram_messages(messages: List[str]) -> bool:
     
     logger.info(f"Successfully sent {success_count} of {len(messages)} messages")
     return success_count == len(messages)
+
 
 async def main():
     """Main application workflow."""
@@ -271,6 +291,7 @@ async def main():
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
+
 
 if __name__ == "__main__":
     asyncio.run(main())
