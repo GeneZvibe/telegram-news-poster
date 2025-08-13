@@ -1,12 +1,11 @@
 name: News Poster - Manual Run
-
 on:
   workflow_dispatch:
     inputs:
       dry_run:
         description: 'Run in dry run mode (no actual posting)'
         required: false
-        default: 'false'
+        default: 'true'
         type: boolean
       force_run:
         description: 'Force run even if no new articles (for testing)'
@@ -36,6 +35,8 @@ jobs:
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        GMAIL_IMAP_USER: ${{ secrets.GMAIL_IMAP_USER }}
+        GMAIL_IMAP_PASS: ${{ secrets.GMAIL_IMAP_PASS }}
         DRY_RUN: ${{ inputs.dry_run }}
         FORCE_RUN: ${{ inputs.force_run }}
       run: |
