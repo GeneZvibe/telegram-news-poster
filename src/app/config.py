@@ -27,7 +27,7 @@ class Settings(BaseSettings):
             "id.atlassian.com", "github.com/login", "gitlab.com/users/sign_in",
             
             # Paywalls and subscription gates
-            "subscribe.", "paywall.", "premium.", "plus."  # Common subdomain patterns
+            "subscribe.", "paywall.", "premium.", "plus.",  # Common subdomain patterns
             "pro.", "upgrade.", 
             
             # Common tracker and ad domains
@@ -35,8 +35,14 @@ class Settings(BaseSettings):
             "doubleclick.net", "googlesyndication.com", "amazon-adsystem.com",
             "adsystem.amazon.com", "googlepubads.g.doubleclick.net",
             
+            # Newsletter/tracker redirector domains
+            "ct.sendgrid.net", "sendgrid.net", "mailchi.mp", "l.facebook.com", "l.messenger.com",
+            "t.co", "lnkd.in", "mail.google.com", "click.email.*", "links.mail.*",
+            "go.pardot.com", "urldefense.com", "mandrillapp.com", "click.icptrack.com",
+            "sparkloop.app", "beehiiv.com", "verge.link",
+            
             # URL shorteners and redirectors that might hide login/paywall
-            "bit.ly", "tinyurl.com", "goo.gl", "t.co", "ow.ly", "short.link",
+            "bit.ly", "tinyurl.com", "goo.gl", "ow.ly", "short.link",
         ],
         description="Domains to block from URL processing"
     )
@@ -61,9 +67,13 @@ class Settings(BaseSettings):
             "/admin", "/wp-admin", "/administrator", "/control",
             "/api/", "/webhook", "/callback", "/ping", "/health",
             
-            # Newsletter and email-specific
+            # Newsletter and email-specific (updated)
             "/unsubscribe", "/newsletter", "/email", "/mailchimp",
             "/campaign", "/drip", "/convertkit", "/mailgun",
+            
+            # Newsletter/tracker path keywords
+            "/ss/c", "/list-manage", "/r/?u=", "/tracking", "/ref",
+            "mc_cid", "mc_eid",
         ],
         description="Path keywords to ban from URLs"
     )
