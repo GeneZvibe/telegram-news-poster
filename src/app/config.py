@@ -19,6 +19,55 @@ class Settings(BaseSettings):
         description="Keywords to filter news articles"
     )
     
+    # URL filtering - blocked domains and banned path keywords
+    blocked_domains: List[str] = Field(
+        default=[
+            # Social media login/register pages
+            "accounts.google.com", "login.microsoftonline.com", "auth0.com", "okta.com",
+            "id.atlassian.com", "github.com/login", "gitlab.com/users/sign_in",
+            
+            # Paywalls and subscription gates
+            "subscribe.", "paywall.", "premium.", "plus."  # Common subdomain patterns
+            "pro.", "upgrade.", 
+            
+            # Common tracker and ad domains
+            "google-analytics.com", "googletagmanager.com", "facebook.com/tr",
+            "doubleclick.net", "googlesyndication.com", "amazon-adsystem.com",
+            "adsystem.amazon.com", "googlepubads.g.doubleclick.net",
+            
+            # URL shorteners and redirectors that might hide login/paywall
+            "bit.ly", "tinyurl.com", "goo.gl", "t.co", "ow.ly", "short.link",
+        ],
+        description="Domains to block from URL processing"
+    )
+    
+    banned_path_keywords: List[str] = Field(
+        default=[
+            # Authentication and account management
+            "/login", "/signin", "/sign-in", "/register", "/signup", "/sign-up",
+            "/auth", "/oauth", "/sso", "/authenticate",
+            "/account", "/profile", "/dashboard", "/settings",
+            
+            # Subscription and payment
+            "/subscribe", "/subscription", "/premium", "/upgrade", "/pricing",
+            "/checkout", "/payment", "/billing", "/paywall",
+            "/plus", "/pro", "/member", "/membership",
+            
+            # Tracking and analytics
+            "/track", "/analytics", "/pixel", "/beacon", "/metrics",
+            "/utm_", "?utm_", "&utm_", "/click", "/redirect",
+            
+            # Administrative and system pages
+            "/admin", "/wp-admin", "/administrator", "/control",
+            "/api/", "/webhook", "/callback", "/ping", "/health",
+            
+            # Newsletter and email-specific
+            "/unsubscribe", "/newsletter", "/email", "/mailchimp",
+            "/campaign", "/drip", "/convertkit", "/mailgun",
+        ],
+        description="Path keywords to ban from URLs"
+    )
+    
     # Scheduling
     post_time: str = Field(default="12:00", description="Time to post daily updates (HH:MM)")
     timezone: str = Field(default="US/Eastern", description="Timezone for posting schedule")
