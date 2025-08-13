@@ -1,9 +1,10 @@
 name: News Poster - Scheduled Run
-
 on:
   schedule:
-    # Run at 15:55 UTC (11:55 AM ET during standard time, 12:55 PM ET during daylight saving)
-    - cron: '55 15 * * *'
+    # Run 3x daily at 13:00, 19:00, and 01:00 UTC (8 AM, 2 PM, 8 PM ET)
+    - cron: '0 13 * * *'  # 1:00 PM UTC = 8:00 AM ET
+    - cron: '0 19 * * *'  # 7:00 PM UTC = 2:00 PM ET
+    - cron: '0 1 * * *'   # 1:00 AM UTC = 8:00 PM ET (previous day)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -11,7 +12,11 @@ on:
         required: false
         default: 'false'
         type: boolean
-
+      force_run:
+        description: 'Run even if no new articles'
+        required: false
+        default: 'false'
+        type: boolean
 jobs:
   post-news:
     runs-on: ubuntu-latest
@@ -35,5 +40,6 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        FORCE_RUN: ${{ inputs.force_run || 'false' }}
       run: |
         python -m src.app.main
