@@ -1,7 +1,7 @@
 """Configuration settings for Telegram News Poster."""
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -31,6 +31,14 @@ class Settings(BaseSettings):
     telegram_bot_token: str = Field(description="Telegram bot token")
     telegram_chat_id: str = Field(description="Telegram chat/channel ID")
     
+    # Gmail IMAP configuration (new)
+    gmail_imap_user: Optional[str] = Field(default=None, description="Gmail IMAP username/email")
+    gmail_imap_pass: Optional[str] = Field(default=None, description="Gmail IMAP app password")
+    
+    # Runtime control settings (new)
+    dry_run: bool = Field(default=True, description="Run in dry mode without actually posting")
+    force_run: bool = Field(default=False, description="Force run even if no new articles found")
+    
     # Optional OpenAI for advanced summarization (placeholder for future use)
     openai_api_key: str = Field(default="", description="OpenAI API key (optional)")
     
@@ -47,6 +55,10 @@ class Settings(BaseSettings):
         fields = {
             "telegram_bot_token": {"env": "TELEGRAM_BOT_TOKEN"},
             "telegram_chat_id": {"env": "TELEGRAM_CHAT_ID"},
+            "gmail_imap_user": {"env": "GMAIL_IMAP_USER"},
+            "gmail_imap_pass": {"env": "GMAIL_IMAP_PASS"},
+            "dry_run": {"env": "DRY_RUN"},
+            "force_run": {"env": "FORCE_RUN"},
             "openai_api_key": {"env": "OPENAI_API_KEY"},
         }
 
