@@ -1,31 +1,24 @@
 # Core dependencies for RSS parsing and HTTP requests
 feedparser==6.0.10
 requests==2.31.0
-
 # Telegram bot API
 python-telegram-bot==20.3
-
 # YAML parsing for configuration
 PyYAML==6.0
-
 # Date/time handling
 python-dateutil==2.8.2
-
 # HTML parsing and text processing
 beautifulsoup4==4.12.2
 lxml==4.9.3
-
 # For potential AI-powered summarization
 openai==1.3.8
-
 # For environment variable loading
 python-dotenv==1.0.0
-
 # For JSON handling and data persistence
 orjson==3.9.7
-
 # For timezone handling
 pytz==2023.3
-
 # For logging enhancements
 coloredlogs==15.0.1
+# Pydantic v2 settings support
+pydantic-settings==2.2.1
