@@ -134,66 +134,24 @@ async def deduplicate_articles(articles: List[Dict[str, Any]]) -> List[Dict[str,
     return unique_articles
 
 async def compose_telegram_messages(articles: List[Dict[str, Any]]) -> List[str]:
-    """Compose separate Telegram messages for each article, grouped by topic."""
+    """Compose separate Telegram messages for each article with simplified format."""
     if not articles:
         return ["📰 No relevant news found today."]
         
-    # Group articles by category based on matched keywords
-    categories = {
-        'AI': [],
-        'MusicTech': [],
-        'XR': []
-    }
+    messages = []
     
     for article in articles:
-        keyword = article.get('matched_keyword', '')
-        if any(ai_kw in keyword.lower() for ai_kw in ['ai', 'artificial intelligence', 'machine learning', 'ml', 'gpt', 'llm']):
-            categories['AI'].append(article)
-        elif any(music_kw in keyword.lower() for music_kw in ['music', 'audio', 'daw', 'vst', 'plugin']):
-            categories['MusicTech'].append(article)
-        elif any(xr_kw in keyword.lower() for xr_kw in ['xr', 'vr', 'ar', 'mr', 'virtual', 'augmented', 'mixed reality']):
-            categories['XR'].append(article)
-            
-    # Check if we have any articles in any category
-    has_content = any(len(cat_articles) > 0 for cat_articles in categories.values())
-    if not has_content:
-        return ["📰 No relevant news found today."]
-    
-    messages = []
-    date_str = datetime.now().strftime('%B %d, %Y')
-    
-    # Create separate messages for each category with articles
-    for category, cat_articles in categories.items():
-        if cat_articles:
-            emoji = {'AI': '🤖', 'MusicTech': '🎵', 'XR': '🥽'}
-            
-            # Send topic header first if there are multiple articles
-            if len(cat_articles) > 1:
-                header_msg = f"📰 **Daily Tech News - {date_str}**\n\n{emoji[category]} **{category}**"
-                messages.append(header_msg)
-            
-            # Send each article as a separate message
-            for article in cat_articles[:3]:  # Limit to 3 per category
-                summary = create_summary(article['description'])
-                
-                if len(cat_articles) == 1:
-                    # Single article includes full header
-                    article_msg = (
-                        f"📰 **Daily Tech News - {date_str}**\n\n"
-                        f"{emoji[category]} **{category}**\n"
-                        f"• *{article['title']}*\n"
-                        f"  TL;DR: {summary}\n"
-                        f"  🔗 [Read more]({article['link']})"
-                    )
-                else:
-                    # Multiple articles just show the article content
-                    article_msg = (
-                        f"• *{article['title']}*\n"
-                        f"  TL;DR: {summary}\n"
-                        f"  🔗 [Read more]({article['link']})"
-                    )
-                
-                messages.append(article_msg)
+        # Create summary
+        summary = create_summary(article['description'])
+        
+        # Format: 1) Bold TLDR headline, 2) blank line, 3) TLDR body, 4) blank line, 5) Read more link
+        article_msg = (
+            f"**{article['title']}**\n\n"
+            f"{summary}\n\n"
+            f"[Read more]({article['link']})"
+        )
+        
+        messages.append(article_msg)
                 
     return messages
 
