@@ -1,0 +1,32 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "telegram-news-poster"
+version = "0.1.0"
+description = "Automated daily TL;DR news updates for MusicTech, AI, and XR topics via Telegram"
+authors = ["GeneZvibe"]
+readme = "README.md"
+packages = [{include = "app", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+feedparser = "^6.0.11"
+requests = "^2.31.0"
+python-dateutil = "^2.8.2"
+pydantic = "^2.5.0"
+tenacity = "^8.2.3"
+pytz = "^2024.1"
+beautifulsoup4 = "^4.12.2"
+newspaper3k = "^0.2.8"
+tiktoken = "^0.5.2"
+openai = "^1.6.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.4"
+black = "^23.12.1"
+flake8 = "^7.0.0"
+
+[tool.poetry.scripts]
+run = "app.main:main"
