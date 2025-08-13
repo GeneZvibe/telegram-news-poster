@@ -1,0 +1,92 @@
+# RSS/Atom feed sources for news aggregation
+# Organized by topic categories: AI, MusicTech, XR
+
+sources:
+  # Artificial Intelligence and Machine Learning
+  ai:
+    - name: "AI News"
+      url: "https://www.artificialintelligence-news.com/feed/"
+      description: "Latest AI industry news and developments"
+      
+    - name: "VentureBeat AI"
+      url: "https://venturebeat.com/ai/feed/"
+      description: "AI coverage from VentureBeat"
+      
+    - name: "MIT Technology Review AI"
+      url: "https://www.technologyreview.com/topic/artificial-intelligence/feed/"
+      description: "AI research and applications from MIT"
+      
+    - name: "Towards Data Science"
+      url: "https://towardsdatascience.com/feed"
+      description: "Medium publication on data science and ML"
+      
+    - name: "OpenAI Blog"
+      url: "https://openai.com/blog/rss.xml"
+      description: "Official OpenAI research and product updates"
+      
+    - name: "Google AI Blog"
+      url: "https://ai.googleblog.com/feeds/posts/default"
+      description: "Google's AI research and developments"
+
+  # Music Technology
+  musictech:
+    - name: "Sound on Sound"
+      url: "https://www.soundonsound.com/rss"
+      description: "Music technology magazine and reviews"
+      
+    - name: "MusicTech"
+      url: "https://www.musictech.net/feed/"
+      description: "Music production and technology news"
+      
+    - name: "Reverb Machine"
+      url: "https://reverbmachine.com/feed/"
+      description: "Electronic music production and gear"
+      
+    - name: "Attack Magazine"
+      url: "https://www.attackmagazine.com/feed/"
+      description: "Electronic music production techniques"
+      
+    - name: "CDM Create Digital Music"
+      url: "https://cdm.link/feed/"
+      description: "Digital music creation tools and culture"
+      
+    - name: "Synthtopia"
+      url: "https://www.synthtopia.com/feed/"
+      description: "Synthesizer and electronic music news"
+
+  # Extended Reality (XR): VR, AR, MR
+  xr:
+    - name: "Road to VR"
+      url: "https://www.roadtovr.com/feed/"
+      description: "Virtual reality news and reviews"
+      
+    - name: "VRScout"
+      url: "https://vrscout.com/feed/"
+      description: "VR content and technology coverage"
+      
+    - name: "AR Insider"
+      url: "https://arinsider.co/feed/"
+      description: "Augmented reality industry analysis"
+      
+    - name: "Next Reality"
+      url: "https://next.reality.news/rss.xml"
+      description: "AR and MR news and tutorials"
+      
+    - name: "Upload VR"
+      url: "https://uploadvr.com/feed/"
+      description: "VR gaming and technology news"
+      
+    - name: "Mixed News"
+      url: "https://mixed-news.com/en/feed/"
+      description: "VR, AR and mixed reality coverage"
+
+# Configuration for feed processing
+processing:
+  # Maximum articles to fetch per source per run
+  max_articles_per_source: 5
+  
+  # Age limit for articles (in hours)
+  max_article_age_hours: 48
+  
+  # Minimum article length (in characters)
+  min_article_length: 200
