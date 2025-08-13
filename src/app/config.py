@@ -11,12 +11,48 @@ class Settings(BaseSettings):
     # Sources configuration
     sources_file: str = Field(default="sources.yaml", description="Path to sources YAML file")
     
-    # Keyword filtering
+    # Keyword filtering - UPDATED: Tech-first allowlist and gaming blocklist
+    allowlist_keywords: List[str] = Field(
+        default=[
+            # AI/ML/LLM terms
+            "AI", "artificial intelligence", "machine learning", "ML", "LLM", "GPT",
+            
+            # XR/VR/AR/MR terms
+            "XR", "AR", "VR", "augmented reality", "virtual reality", "mixed reality",
+            "headset", "optics", "pass-through", "SLAM", "hand tracking", "computer vision",
+            
+            # Research and development
+            "research", "paper", "benchmark",
+            
+            # Development tools and frameworks
+            "SDK", "API", "framework", "model", "dataset", "tooling", "compiler", "library", "plugin",
+            
+            # Audio/music tech
+            "DAW", "synth", "synthesis", "DSP", "audio engineering", "MIDI", "VST", "AAX", "AU",
+            
+            # Hardware and tech
+            "firmware", "hardware", "silicon", "chip", "semiconductor", "sensor"
+        ],
+        description="Keywords that must be present for tech-focused filtering"
+    )
+    
+    blocklist_keywords: List[str] = Field(
+        default=[
+            # Gaming and entertainment exclusions
+            "game review", "walkthrough", "let's play", "let us play", "trailer", "teaser",
+            "DLC", "season pass", "patch notes", "speedrun", "esports", "tournament",
+            "giveaway", "preorder", "pre-order", "merch", "skins", "loot", "boss fight",
+            "build guide", "weapon", "quest", "raid", "console", "PS5", "Xbox", "Switch"
+        ],
+        description="Keywords that exclude articles from gaming/entertainment posts"
+    )
+    
+    # Legacy keywords field (kept for backward compatibility)
     keywords: List[str] = Field(
         default=["AI", "artificial intelligence", "machine learning", "ML", "GPT", "LLM", 
                 "XR", "virtual reality", "VR", "augmented reality", "AR", "mixed reality", "MR",
                 "MusicTech", "music technology", "audio", "DAW", "VST", "plugin"],
-        description="Keywords to filter news articles"
+        description="Legacy keywords field for backward compatibility"
     )
     
     # URL filtering - blocked domains and banned path keywords
@@ -94,12 +130,12 @@ class Settings(BaseSettings):
     gmail_imap_user: Optional[str] = Field(default=None, description="Gmail IMAP username/email")
     gmail_imap_pass: Optional[str] = Field(default=None, description="Gmail IMAP app password")
     
-    # Runtime control settings - UPDATED TO PREVENT AUTO-RUN
-    dry_run: bool = Field(default=True, description="Run in dry mode without actually posting")
+    # Runtime control settings
+    dry_run: bool = Field(default=False, description="Run in dry mode without actually posting")
     force_run: bool = Field(default=False, description="Force run even if no new articles found")
     manual_run_only: bool = Field(default=True, description="Require explicit confirmation to run")
     
-    # Content filtering settings (NEW)
+    # Content filtering settings
     max_articles_total: int = Field(default=10, description="Maximum total articles to post per run")
     min_article_quality_score: float = Field(default=0.5, description="Minimum quality score for articles")
     
@@ -126,6 +162,62 @@ class Settings(BaseSettings):
             "manual_run_only": {"env": "MANUAL_RUN_ONLY"},
             "openai_api_key": {"env": "OPENAI_API_KEY"},
         }
+
+
+def filter_articles(articles, settings):
+    """
+    Filter articles based on allowlist and blocklist keywords.
+    Requires at least one allowlist keyword and zero blocklist matches.
+    Prefers title over description weighting.
+    
+    Args:
+        articles: List of article dictionaries with 'title' and 'description' fields
+        settings: Settings object with allowlist_keywords and blocklist_keywords
+        
+    Returns:
+        List of filtered articles that meet the criteria
+    """
+    filtered_articles = []
+    
+    for article in articles:
+        title = (article.get('title', '') or '').lower()
+        description = (article.get('description', '') or '').lower()
+        
+        # Check for blocklist keywords (immediate exclusion)
+        has_blocked_content = False
+        for blocked_word in settings.blocklist_keywords:
+            if blocked_word.lower() in title or blocked_word.lower() in description:
+                has_blocked_content = True
+                break
+        
+        if has_blocked_content:
+            continue
+            
+        # Check for allowlist keywords (must have at least one)
+        has_allowed_content = False
+        title_score = 0
+        desc_score = 0
+        
+        for allowed_word in settings.allowlist_keywords:
+            word_lower = allowed_word.lower()
+            if word_lower in title:
+                has_allowed_content = True
+                title_score += 1
+            elif word_lower in description:
+                has_allowed_content = True
+                desc_score += 1
+                
+        if has_allowed_content:
+            # Calculate relevance score (title weighted higher than description)
+            relevance_score = (title_score * 2) + desc_score
+            article['relevance_score'] = relevance_score
+            filtered_articles.append(article)
+    
+    # Sort by relevance score (title matches get priority)
+    filtered_articles.sort(key=lambda x: x.get('relevance_score', 0), reverse=True)
+    
+    return filtered_articles
+
 
 # Create global settings instance
 settings = Settings()
