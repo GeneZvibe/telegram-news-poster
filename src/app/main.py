@@ -133,10 +133,10 @@ async def deduplicate_articles(articles: List[Dict[str, Any]]) -> List[Dict[str,
     
     return unique_articles
 
-async def compose_telegram_message(articles: List[Dict[str, Any]]) -> str:
-    """Compose a Telegram message from filtered articles."""
+async def compose_telegram_messages(articles: List[Dict[str, Any]]) -> List[str]:
+    """Compose separate Telegram messages for each article, grouped by topic."""
     if not articles:
-        return "📰 No relevant news found today."
+        return ["📰 No relevant news found today."]
         
     # Group articles by category based on matched keywords
     categories = {
@@ -157,26 +157,45 @@ async def compose_telegram_message(articles: List[Dict[str, Any]]) -> str:
     # Check if we have any articles in any category
     has_content = any(len(cat_articles) > 0 for cat_articles in categories.values())
     if not has_content:
-        return "📰 No relevant news found today."
-            
-    # Compose message
-    message_parts = [f"📰 **Daily Tech News - {datetime.now().strftime('%B %d, %Y')}**\n"]
+        return ["📰 No relevant news found today."]
     
+    messages = []
+    date_str = datetime.now().strftime('%B %d, %Y')
+    
+    # Create separate messages for each category with articles
     for category, cat_articles in categories.items():
         if cat_articles:
             emoji = {'AI': '🤖', 'MusicTech': '🎵', 'XR': '🥽'}
-            message_parts.append(f"\n{emoji[category]} **{category}**")
             
+            # Send topic header first if there are multiple articles
+            if len(cat_articles) > 1:
+                header_msg = f"📰 **Daily Tech News - {date_str}**\n\n{emoji[category]} **{category}**"
+                messages.append(header_msg)
+            
+            # Send each article as a separate message
             for article in cat_articles[:3]:  # Limit to 3 per category
                 summary = create_summary(article['description'])
-                message_parts.append(
-                    f"• *{article['title']}*\n"
-                    f"  TL;DR: {summary}\n"
-                    f"  🔗 [Read more]({article['link']})"
-                )
                 
-    message_parts.append("\n---\n📱 *Powered by @GeneFrankelBot*")
-    return "\n".join(message_parts)
+                if len(cat_articles) == 1:
+                    # Single article includes full header
+                    article_msg = (
+                        f"📰 **Daily Tech News - {date_str}**\n\n"
+                        f"{emoji[category]} **{category}**\n"
+                        f"• *{article['title']}*\n"
+                        f"  TL;DR: {summary}\n"
+                        f"  🔗 [Read more]({article['link']})"
+                    )
+                else:
+                    # Multiple articles just show the article content
+                    article_msg = (
+                        f"• *{article['title']}*\n"
+                        f"  TL;DR: {summary}\n"
+                        f"  🔗 [Read more]({article['link']})"
+                    )
+                
+                messages.append(article_msg)
+                
+    return messages
 
 async def send_telegram_message(message: str) -> bool:
     """Send message to Telegram channel using Bot API."""
@@ -208,6 +227,23 @@ async def send_telegram_message(message: str) -> bool:
     except Exception as e:
         logger.error(f"Failed to send Telegram message: {e}")
         return False
+
+async def send_telegram_messages(messages: List[str]) -> bool:
+    """Send multiple messages to Telegram channel."""
+    success_count = 0
+    
+    for i, message in enumerate(messages):
+        logger.info(f"Sending message {i + 1} of {len(messages)}")
+        success = await send_telegram_message(message)
+        if success:
+            success_count += 1
+        
+        # Add delay between messages to avoid rate limiting
+        if i < len(messages) - 1:
+            await asyncio.sleep(1)
+    
+    logger.info(f"Successfully sent {success_count} of {len(messages)} messages")
+    return success_count == len(messages)
 
 async def main():
     """Main application workflow."""
@@ -258,21 +294,21 @@ async def main():
             logger.info("No relevant articles found and FORCE_RUN not set. Skipping post.")
             return
         
-        # Compose and send message
-        message = await compose_telegram_message(unique_articles)
-        logger.info("Composed message for Telegram")
+        # Compose messages
+        messages = await compose_telegram_messages(unique_articles)
+        logger.info(f"Composed {len(messages)} messages for Telegram")
         
         # Only send if we have actual content (not just "no news found")
-        if "No relevant news found" in message and not settings.force_run:
+        if len(messages) == 1 and "No relevant news found" in messages[0] and not settings.force_run:
             logger.info("No relevant news content to post and FORCE_RUN not set. Skipping.")
             return
         
-        success = await send_telegram_message(message)
+        success = await send_telegram_messages(messages)
         
         if success:
             logger.info("News posting completed successfully")
         else:
-            logger.error("Failed to send message")
+            logger.error("Failed to send some messages")
             
     except Exception as e:
         logger.error(f"Application error: {e}")
