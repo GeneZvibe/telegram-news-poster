@@ -1,0 +1,39 @@
+name: News Poster - Scheduled Run
+
+on:
+  schedule:
+    # Run at 15:55 UTC (11:55 AM ET during standard time, 12:55 PM ET during daylight saving)
+    - cron: '55 15 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry run mode (no actual posting)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  post-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run news poster
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        DRY_RUN: ${{ inputs.dry_run || 'false' }}
+      run: |
+        python -m src.app.main
