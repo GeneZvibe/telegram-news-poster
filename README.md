@@ -1,4 +1,5 @@
 # Telegram News Poster
+
 An automated news aggregation system that fetches RSS feeds, filters for relevant tech topics (AI, MusicTech, XR), summarizes articles, and posts them to a Telegram channel.
 
 ## Features
@@ -94,8 +95,8 @@ The system automatically runs daily at 15:55 UTC (11:55 AM ET standard time) via
 2. Select "News Poster - Manual Run"
 3. Click "Run workflow"
 4. Configure options:
-   - `dry_run`: Set to `true` to test without posting
-   - `force_run`: Set to `true` to run even if no new articles
+   - **dry_run**: Set to true to test without posting
+   - **force_run**: Set to true to run even if no new articles
 
 #### Local Development
 
@@ -125,27 +126,27 @@ The system automatically runs daily at 15:55 UTC (11:55 AM ET standard time) via
 ## Configuration Options
 
 | Environment Variable | Description | Default |
-|---------------------|-------------|----------|
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token | Required |
-| `TELEGRAM_CHAT_ID` | Target chat/channel ID | Required |
-| `DRY_RUN` | Test mode (no posting) | `false` |
-| `FORCE_RUN` | Run even without new articles | `false` |
-| `OPENAI_API_KEY` | OpenAI API key (optional) | Empty |
+|----------------------|-------------|----------|
+| TELEGRAM_BOT_TOKEN | Telegram bot token | Required |
+| TELEGRAM_CHAT_ID | Target chat/channel ID | Required |
+| DRY_RUN | Test mode (no posting) | false |
+| FORCE_RUN | Run even without new articles | false |
+| OPENAI_API_KEY | OpenAI API key (optional) | Empty |
 
 ## Workflow Details
 
 ### Scheduled Workflow (.github/workflows/schedule.yml)
 
-- **Trigger**: Daily at 15:55 UTC
-- **Features**: Automatic run with dry_run support
-- **Environment**: Uses repository secrets for tokens
+• **Trigger**: Daily at 15:55 UTC  
+• **Features**: Automatic run with dry_run support  
+• **Environment**: Uses repository secrets for tokens  
 
 ### Manual Workflow (.github/workflows/manual.yml)
 
-- **Trigger**: Manual workflow dispatch
-- **Options**:
-  - `dry_run` (boolean): Test without posting
-  - `force_run` (boolean): Run even without new articles
+• **Trigger**: Manual workflow dispatch  
+• **Options**:  
+  - **dry_run** (boolean): Test without posting  
+  - **force_run** (boolean): Run even without new articles  
 
 ## How It Works
 
@@ -243,6 +244,15 @@ curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe"
 - Add domains: append to `BLOCKED_DOMAINS` list
 - Add keywords: append to `BLOCKED_KEYWORDS` list
 - Test changes with DRY_RUN=true
+
+**Tech-First Content Filtering:**
+- **Allowlist System**: Articles must contain at least one keyword from `allowlist_keywords` in `src/app/config.py`
+- **Gaming/Entertainment Exclusions**: Articles containing any `blocklist_keywords` are automatically excluded
+- **Title Preference**: Matches in article titles are weighted 2x higher than description matches
+- **Current Allowlist**: AI/ML, XR/VR/AR, research terms, development tools, audio tech, hardware terms
+- **Current Blocklist**: Gaming reviews, walkthroughs, esports, console-specific content, game merchandising
+- **Filter Function**: `filter_articles()` in `config.py` implements the dual-filter logic with relevance scoring
+- **Customization**: Modify `allowlist_keywords` and `blocklist_keywords` lists in Settings class
 
 **Local Development:**
 ```bash
