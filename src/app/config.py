@@ -1,10 +1,9 @@
 """Configuration settings for Telegram News Poster."""
-
 import os
 from pathlib import Path
 from typing import List
-from pydantic import BaseSettings, Field
-
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     """Application settings managed by Pydantic."""
@@ -50,7 +49,6 @@ class Settings(BaseSettings):
             "telegram_chat_id": {"env": "TELEGRAM_CHAT_ID"},
             "openai_api_key": {"env": "OPENAI_API_KEY"},
         }
-
 
 # Create global settings instance
 settings = Settings()
