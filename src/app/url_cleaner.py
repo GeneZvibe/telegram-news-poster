@@ -1,10 +1,11 @@
-"""URL cleaning utilities for removing tracking parameters and resolving canonical links."""
+"""URL cleaning utilities with domain blocking and content type validation."""
 import re
 import logging
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from typing import Optional
 import requests
 from bs4 import BeautifulSoup
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,32 @@ TRACKING_PARAMS = {
     'hash', 'track', 'tracking', 'tid', 'cid', 'eid',
 }
 
+def is_blocked_domain(url: str) -> bool:
+    """Check if URL domain is in the blocked domains list."""
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        
+        # Check against blocked domains from config
+        blocked_domains = getattr(settings, 'blocked_domains', [])
+        return any(blocked in domain for blocked in blocked_domains)
+    except Exception as e:
+        logger.warning(f"Failed to check blocked domain for {url}: {e}")
+        return False
+
+def has_banned_path_keywords(url: str) -> bool:
+    """Check if URL path contains banned keywords."""
+    try:
+        parsed = urlparse(url)
+        path = parsed.path.lower()
+        
+        # Check against banned path keywords from config
+        banned_keywords = getattr(settings, 'banned_path_keywords', [])
+        return any(keyword in path for keyword in banned_keywords)
+    except Exception as e:
+        logger.warning(f"Failed to check banned path keywords for {url}: {e}")
+        return False
+
 def clean_url(url: str) -> str:
     """Remove tracking parameters from URL."""
     try:
@@ -65,35 +92,63 @@ def clean_url(url: str) -> str:
         logger.warning(f"Failed to clean URL {url}: {e}")
         return url
 
-def follow_redirects(url: str, max_redirects: int = 5) -> str:
-    """Follow redirects to get final destination URL."""
+def follow_redirects_and_validate(url: str, max_redirects: int = 5) -> Optional[str]:
+    """Follow redirects with HEAD/GET and verify content-type text/html."""
     try:
+        # First try HEAD request to follow redirects efficiently
         response = requests.head(
             url, 
             allow_redirects=True, 
             timeout=10,
             headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)'
             }
         )
-        # Return the final URL after all redirects
-        return response.url
+        
+        final_url = response.url
+        
+        # Check content-type from HEAD response
+        content_type = response.headers.get('content-type', '').lower()
+        if 'text/html' in content_type:
+            return final_url
+        
+        # If HEAD doesn't give us content-type, try GET with limited content
+        response = requests.get(
+            final_url,
+            timeout=15,
+            stream=True,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)'
+            }
+        )
+        
+        # Check content-type from GET response
+        content_type = response.headers.get('content-type', '').lower()
+        if 'text/html' not in content_type:
+            logger.info(f"URL {final_url} is not HTML content (content-type: {content_type})")
+            return None
+            
+        response.raise_for_status()
+        return final_url
+        
     except Exception as e:
         logger.warning(f"Failed to follow redirects for {url}: {e}")
-        return url
+        return None
 
-async def resolve_canonical_url(url: str) -> Optional[str]:
+def resolve_canonical_url(url: str) -> Optional[str]:
     """Try to resolve canonical URL using rel=canonical or og:url."""
     try:
-        # First, follow redirects
-        final_url = follow_redirects(url)
+        # First, follow redirects and validate content type
+        final_url = follow_redirects_and_validate(url)
+        if final_url is None:
+            return None
         
         # Then try to fetch the page and find canonical URL
         response = requests.get(
             final_url,
             timeout=15,
             headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)'
             }
         )
         response.raise_for_status()
@@ -148,8 +203,7 @@ async def resolve_canonical_url(url: str) -> Optional[str]:
         
     except Exception as e:
         logger.warning(f"Failed to resolve canonical URL for {url}: {e}")
-        # Return the cleaned original URL as fallback
-        return clean_url(url)
+        return None
 
 def is_shortened_url(url: str) -> bool:
     """Check if URL appears to be from a URL shortening service."""
@@ -166,20 +220,40 @@ def is_shortened_url(url: str) -> bool:
     except:
         return False
 
-def clean_and_resolve_url(url: str) -> str:
-    """Complete URL cleaning and resolution pipeline."""
+def clean_and_resolve_url(url: str) -> Optional[str]:
+    """Complete URL cleaning and resolution pipeline with blocking."""
     try:
+        # First check if domain is blocked
+        if is_blocked_domain(url):
+            logger.info(f"URL blocked due to domain: {url}")
+            return None
+            
+        # Check if path contains banned keywords
+        if has_banned_path_keywords(url):
+            logger.info(f"URL blocked due to path keywords: {url}")
+            return None
+        
         # First clean basic tracking parameters
         cleaned_url = clean_url(url)
         
-        # If it's a shortened URL, try to resolve it fully
+        # If it's a shortened URL or we want to verify content, follow redirects
         if is_shortened_url(cleaned_url):
-            # For shortened URLs, always follow redirects
-            final_url = follow_redirects(cleaned_url)
+            # For shortened URLs, always follow redirects and validate
+            final_url = follow_redirects_and_validate(cleaned_url)
+            if final_url is None:
+                return None
+                
+            # Check final URL for blocks too
+            if is_blocked_domain(final_url) or has_banned_path_keywords(final_url):
+                logger.info(f"Final URL blocked after redirect resolution: {final_url}")
+                return None
+                
             return clean_url(final_url)  # Clean again after resolving
         
+        # For non-shortened URLs, we can optionally validate content type
+        # but for now we'll just return the cleaned URL
         return cleaned_url
         
     except Exception as e:
         logger.error(f"Error in complete URL cleaning for {url}: {e}")
-        return url  # Return original on error
+        return None  # Return None on error to be safe
