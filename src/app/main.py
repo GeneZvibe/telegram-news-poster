@@ -229,7 +229,7 @@ async def main():
                 all_articles.extend(articles)
         
         # Fetch articles from Gmail if configured
-        gmail_articles = await fetch_gmail_articles(
+        gmail_articles = fetch_gmail_articles(
             max_emails=settings.max_articles_per_source * 2  # Allow more emails to be processed
         )
         if gmail_articles:
