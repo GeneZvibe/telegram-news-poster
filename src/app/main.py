@@ -1,22 +1,20 @@
 """Main application script for Telegram News Poster.
-
 Fetch -> Filter -> Summarize -> Dedupe -> Compose -> Send
 """
-
 import asyncio
 import logging
 import hashlib
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from pathlib import Path
-
 import yaml
 import feedparser
 from dateutil import parser as date_parser
-
 from .config import settings, SOURCES_PATH
 from .utils import fetch_url, clean_html, hash_item
 from .summarize import create_summary
+from .gmail import fetch_gmail_articles  # New Gmail integration
+from .url_cleaner import clean_and_resolve_url  # New URL cleaner
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 # Store for deduplication
 processed_articles = set()
-
 
 async def load_sources() -> Dict[str, List[Dict[str, str]]]:
     """Load RSS sources from YAML configuration."""
@@ -35,7 +32,6 @@ async def load_sources() -> Dict[str, List[Dict[str, str]]]:
     except Exception as e:
         logger.error(f"Failed to load sources: {e}")
         return {}
-
 
 async def fetch_feed_articles(feed_url: str, max_articles: int = 5) -> List[Dict[str, Any]]:
     """Fetch articles from a single RSS/Atom feed."""
@@ -56,13 +52,18 @@ async def fetch_feed_articles(feed_url: str, max_articles: int = 5) -> List[Dict
                 elif hasattr(entry, 'published'):
                     published_date = date_parser.parse(entry.published)
                 
-                # Skip old articles
-                if published_date and (datetime.now() - published_date).hours > 48:
+                # Skip old articles - FIX: Use total_seconds() instead of .hours
+                if published_date and (datetime.now() - published_date).total_seconds() / 3600 > 48:
                     continue
+                    
+                # Clean and resolve the article URL
+                article_url = entry.get('link', '')
+                if article_url:
+                    article_url = clean_and_resolve_url(article_url)
                     
                 article = {
                     'title': entry.get('title', '').strip(),
-                    'link': entry.get('link', ''),
+                    'link': article_url,
                     'description': clean_html(entry.get('description', '')),
                     'published': published_date,
                     'source': feed.feed.get('title', 'Unknown Source')
@@ -82,7 +83,6 @@ async def fetch_feed_articles(feed_url: str, max_articles: int = 5) -> List[Dict
         logger.error(f"Error fetching feed {feed_url}: {e}")
         return []
 
-
 async def filter_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Filter articles by keywords and relevance."""
     filtered = []
@@ -100,21 +100,30 @@ async def filter_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]
                 
     return filtered
 
-
 async def deduplicate_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Remove duplicate articles based on content hash."""
+    """Remove duplicate articles based on content hash and URL."""
     global processed_articles
     
     unique_articles = []
     current_hashes = set()
+    current_urls = set()
     
     for article in articles:
+        # Create hash from title and description
         article_hash = hash_item(article['title'] + article['description'])
         
+        # Also check URL for duplicates
+        article_url = article.get('link', '').lower()
+        
         # Skip if we've seen this article recently or in current batch
-        if article_hash not in processed_articles and article_hash not in current_hashes:
+        if (article_hash not in processed_articles and 
+            article_hash not in current_hashes and
+            article_url not in current_urls):
+            
             unique_articles.append(article)
             current_hashes.add(article_hash)
+            if article_url:
+                current_urls.add(article_url)
             
     # Update processed articles set (keep last 1000 for memory management)
     processed_articles.update(current_hashes)
@@ -123,7 +132,6 @@ async def deduplicate_articles(articles: List[Dict[str, Any]]) -> List[Dict[str,
         processed_articles = set(list(processed_articles)[500:])
     
     return unique_articles
-
 
 async def compose_telegram_message(articles: List[Dict[str, Any]]) -> str:
     """Compose a Telegram message from filtered articles."""
@@ -138,13 +146,18 @@ async def compose_telegram_message(articles: List[Dict[str, Any]]) -> str:
     }
     
     for article in articles:
-        keyword = article['matched_keyword']
+        keyword = article.get('matched_keyword', '')
         if any(ai_kw in keyword.lower() for ai_kw in ['ai', 'artificial intelligence', 'machine learning', 'ml', 'gpt', 'llm']):
             categories['AI'].append(article)
         elif any(music_kw in keyword.lower() for music_kw in ['music', 'audio', 'daw', 'vst', 'plugin']):
             categories['MusicTech'].append(article)
         elif any(xr_kw in keyword.lower() for xr_kw in ['xr', 'vr', 'ar', 'mr', 'virtual', 'augmented', 'mixed reality']):
             categories['XR'].append(article)
+            
+    # Check if we have any articles in any category
+    has_content = any(len(cat_articles) > 0 for cat_articles in categories.values())
+    if not has_content:
+        return "📰 No relevant news found today."
             
     # Compose message
     message_parts = [f"📰 **Daily Tech News - {datetime.now().strftime('%B %d, %Y')}**\n"]
@@ -165,11 +178,18 @@ async def compose_telegram_message(articles: List[Dict[str, Any]]) -> str:
     message_parts.append("\n---\n📱 *Powered by @GeneFrankelBot*")
     return "\n".join(message_parts)
 
-
 async def send_telegram_message(message: str) -> bool:
     """Send message to Telegram channel using Bot API."""
     try:
         import requests
+        
+        # Skip sending if in dry run mode
+        if settings.dry_run:
+            logger.info("DRY RUN: Would send message to Telegram:")
+            logger.info("=" * 50)
+            logger.info(message)
+            logger.info("=" * 50)
+            return True
         
         url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
         payload = {
@@ -189,7 +209,6 @@ async def send_telegram_message(message: str) -> bool:
         logger.error(f"Failed to send Telegram message: {e}")
         return False
 
-
 async def main():
     """Main application workflow."""
     logger.info("Starting Telegram News Poster")
@@ -203,9 +222,9 @@ async def main():
             
         all_articles = []
         
-        # Fetch articles from all sources
+        # Fetch articles from RSS feeds
         for category, source_list in sources.items():
-            logger.info(f"Processing {category} sources")
+            logger.info(f"Processing {category} RSS sources")
             
             for source in source_list:
                 logger.info(f"Fetching from {source['name']}")
@@ -214,8 +233,18 @@ async def main():
                     settings.max_articles_per_source
                 )
                 all_articles.extend(articles)
-                
-        logger.info(f"Fetched {len(all_articles)} total articles")
+        
+        # Fetch articles from Gmail if configured
+        gmail_articles = await fetch_gmail_articles(
+            max_emails=settings.max_articles_per_source * 2  # Allow more emails to be processed
+        )
+        if gmail_articles:
+            logger.info(f"Fetched {len(gmail_articles)} articles from Gmail")
+            all_articles.extend(gmail_articles)
+        else:
+            logger.info("No Gmail articles fetched (credentials not configured or no relevant emails)")
+        
+        logger.info(f"Fetched {len(all_articles)} total articles from all sources")
         
         # Process articles through the pipeline
         filtered_articles = await filter_articles(all_articles)
@@ -224,9 +253,19 @@ async def main():
         unique_articles = await deduplicate_articles(filtered_articles)
         logger.info(f"Deduplicated to {len(unique_articles)} unique articles")
         
+        # Skip posting if no relevant articles found
+        if not unique_articles and not settings.force_run:
+            logger.info("No relevant articles found and FORCE_RUN not set. Skipping post.")
+            return
+        
         # Compose and send message
         message = await compose_telegram_message(unique_articles)
         logger.info("Composed message for Telegram")
+        
+        # Only send if we have actual content (not just "no news found")
+        if "No relevant news found" in message and not settings.force_run:
+            logger.info("No relevant news content to post and FORCE_RUN not set. Skipping.")
+            return
         
         success = await send_telegram_message(message)
         
@@ -238,7 +277,6 @@ async def main():
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
-
 
 if __name__ == "__main__":
     asyncio.run(main())
