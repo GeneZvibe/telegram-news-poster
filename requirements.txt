@@ -23,3 +23,5 @@ pytz==2023.3
 coloredlogs==15.0.1
 # Pydantic v2 settings support
 pydantic-settings==2.2.1
+# For retry logic and resilience
+tenacity==8.2.3
