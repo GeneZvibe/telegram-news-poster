@@ -12,7 +12,6 @@ on:
         required: false
         default: 'false'
         type: boolean
-
 jobs:
   post-news:
     runs-on: ubuntu-latest
@@ -39,5 +38,11 @@ jobs:
         GMAIL_IMAP_PASS: ${{ secrets.GMAIL_IMAP_PASS }}
         DRY_RUN: ${{ inputs.dry_run }}
         FORCE_RUN: ${{ inputs.force_run }}
+        # XR strict filtering env vars for reliability
+        XR_STRICT_MODE: 'true'
+        XR_MIN_SIGNALS: '3'
+        XR_NEEDS_ACCLAIM: 'true'
+        XR_BLOCK_KEYWORDS: 'trailer,alpha,beta,multiplayer,coming soon,release window,preview,first look,hands-on,early access,demo'
+        XR_GAMING_DOMAINS: 'roadtovr.com,uploadvr.com,mixed.reality.news'
       run: |
         python -m src.app.main
