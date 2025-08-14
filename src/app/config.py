@@ -66,9 +66,15 @@ class Settings(BaseSettings):
             "game review", "walkthrough", "let's play", "let us play", "trailer", "teaser",
             "DLC", "season pass", "patch notes", "speedrun", "esports", "tournament",
             "giveaway", "preorder", "pre-order", "merch", "skins", "loot", "boss fight",
-            "build guide", "weapon", "quest", "raid", "console", "PS5", "Xbox", "Switch"
+            "build guide", "weapon", "quest", "raid", "console", "PS5", "Xbox", "Switch",
+            
+            # MusicTech plugin exclusions - routine posts without innovation
+            "preset pack", "sample pack", "expansion", "soundbank", "deal", "discount",
+            "Black Friday", "freebie", "bundle", "preset browser", "theme",
+            "Kontakt library", "rompler", "loop pack", "drum kit", "template",
+            "review", "updated to v", "changelog", "compatibility update"
         ],
-        description="Keywords that exclude articles from gaming/entertainment posts"
+        description="Keywords that exclude articles from gaming/entertainment posts and routine plugin announcements"
     )
     
     # Legacy keywords field (kept for backward compatibility)
