@@ -1,0 +1,3 @@
+# This file will store sent article history for deduplication
+# Each line is a JSON object representing a sent article
+# Format: {"hash": "abc123", "url": "https://example.com", "title": "Article Title", "timestamp": "2025-08-14T15:40:00Z"}
