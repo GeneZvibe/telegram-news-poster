@@ -1,9 +1,33 @@
 """Configuration settings for Telegram News Poster."""
 import os
+import re
+import yaml
 from pathlib import Path
 from typing import List, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
+
+def load_blocklist():
+    """Load and compile blocklist patterns from YAML file."""
+    try:
+        blocklist_path = Path(__file__).parent.parent.parent / "data" / "blocklist.yml"
+        if not blocklist_path.exists():
+            return []
+        
+        with open(blocklist_path, 'r') as f:
+            blocklist_data = yaml.safe_load(f)
+        
+        patterns = []
+        if 'vr_gaming_posts' in blocklist_data:
+            for item in blocklist_data['vr_gaming_posts']:
+                pattern = item.get('pattern', '')
+                if pattern:
+                    patterns.append(re.compile(pattern, re.IGNORECASE))
+        
+        return patterns
+    except Exception as e:
+        print(f"Warning: Failed to load blocklist: {e}")
+        return []
 
 class Settings(BaseSettings):
     """Application settings managed by Pydantic."""
@@ -163,15 +187,15 @@ class Settings(BaseSettings):
             "openai_api_key": {"env": "OPENAI_API_KEY"},
         }
 
-
 def filter_articles(articles, settings):
     """
     Filter articles based on allowlist and blocklist keywords.
     Requires at least one allowlist keyword and zero blocklist matches.
     Prefers title over description weighting.
+    UPDATED: Also checks URL patterns against blocklist for immediate exclusion.
     
     Args:
-        articles: List of article dictionaries with 'title' and 'description' fields
+        articles: List of article dictionaries with 'title', 'description', and 'link' fields
         settings: Settings object with allowlist_keywords and blocklist_keywords
         
     Returns:
@@ -179,9 +203,23 @@ def filter_articles(articles, settings):
     """
     filtered_articles = []
     
+    # Load blocklist patterns once for efficiency
+    blocklist_patterns = load_blocklist()
+    
     for article in articles:
         title = (article.get('title', '') or '').lower()
         description = (article.get('description', '') or '').lower()
+        link = article.get('link', '') or ''
+        
+        # EARLY BLOCKLIST CHECK: Check URL patterns first (immediate exclusion)
+        url_blocked = False
+        for pattern in blocklist_patterns:
+            if pattern.search(link):
+                url_blocked = True
+                break
+        
+        if url_blocked:
+            continue
         
         # Check for blocklist keywords (immediate exclusion)
         has_blocked_content = False
@@ -217,7 +255,6 @@ def filter_articles(articles, settings):
     filtered_articles.sort(key=lambda x: x.get('relevance_score', 0), reverse=True)
     
     return filtered_articles
-
 
 # Create global settings instance
 settings = Settings()
