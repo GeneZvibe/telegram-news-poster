@@ -1,6 +1,5 @@
 # RSS/Atom feed sources for news aggregation
-# Organized by topic categories: AI, MusicTech, XR
-
+# Organized by topic categories: AI, MusicTech, XR, Tech
 sources:
   # Artificial Intelligence and Machine Learning
   ai:
@@ -27,6 +26,24 @@ sources:
     - name: "Google AI Blog"
       url: "https://ai.googleblog.com/feeds/posts/default"
       description: "Google's AI research and developments"
+      
+    - name: "TechCrunch AI"
+      url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+      description: "TechCrunch AI and machine learning coverage"
+      
+    - name: "The Verge AI"
+      url: "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml"
+      description: "The Verge AI and technology coverage"
+
+  # Technology News  
+  tech:
+    - name: "TechCrunch"
+      url: "https://techcrunch.com/feed/"
+      description: "Main TechCrunch technology news feed"
+      
+    - name: "The Verge"
+      url: "https://www.theverge.com/rss/index.xml"
+      description: "The Verge main technology news feed"
 
   # Music Technology
   musictech:
@@ -53,7 +70,7 @@ sources:
     - name: "Synthtopia"
       url: "https://www.synthtopia.com/feed/"
       description: "Synthesizer and electronic music news"
-
+      
   # Extended Reality (XR): VR, AR, MR
   xr:
     - name: "Road to VR"
@@ -79,7 +96,7 @@ sources:
     - name: "Mixed News"
       url: "https://mixed-news.com/en/feed/"
       description: "VR, AR and mixed reality coverage"
-
+      
 # Configuration for feed processing
 processing:
   # Maximum articles to fetch per source per run
