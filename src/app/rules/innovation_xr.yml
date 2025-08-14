@@ -1,0 +1,64 @@
+# Innovation/XR Domain-Specific Filtering Rules
+# This file contains filtering criteria for XR (gaming-heavy) domains to enforce higher innovation thresholds
+
+# Target domains that require stricter innovation filtering
+domains:
+  - "roadtovr.com"
+  - "uploadvr.com"
+  - "mixed.reality.news"
+
+# Innovation filtering rules for the above domains
+rules:
+  # Minimum innovation signals required (at least 2 distinct signals in title or summary)
+  min_signals: 2
+  
+  # OR acclaim markers that can bypass min_signals requirement
+  acclaim_markers:
+    - "award-winning"
+    - "acclaimed"
+    - "Metacritic>=85"  # Metacritic score of 85 or higher
+    - "Game of the Year"
+    - "Editor's Choice"
+    - "5/5 stars"
+    - "10/10"
+    - "9/10"
+  
+  # Block keywords that should prevent articles from passing unless criteria above are met
+  block_keywords:
+    - "trailer"
+    - "alpha"
+    - "beta"
+    - "multiplayer"
+    - "coming soon"
+    - "release window"
+    - "gameplay"
+    - "preview"
+    - "early access"
+    - "first look"
+    - "hands-on"
+    - "demo"
+  
+  # Innovation signals to look for (these count toward min_signals)
+  innovation_signals:
+    - "breakthrough"
+    - "revolutionary"
+    - "first-of-its-kind"
+    - "patent"
+    - "research"
+    - "AI"
+    - "machine learning"
+    - "haptic"
+    - "eye tracking"
+    - "hand tracking"
+    - "SLAM"
+    - "computer vision"
+    - "neural"
+    - "SDK"
+    - "API"
+    - "open source"
+    - "partnership"
+    - "collaboration"
+    - "funding"
+    - "investment"
+    - "IPO"
+    - "acquisition"
