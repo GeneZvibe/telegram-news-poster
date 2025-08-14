@@ -42,9 +42,9 @@ jobs:
         FORCE_RUN: ${{ inputs.force_run || 'false' }}
         # XR strict filtering env vars for reliability
         XR_STRICT_MODE: 'true'
-        XR_MIN_SIGNALS: '2'
+        XR_MIN_SIGNALS: '3'
         XR_NEEDS_ACCLAIM: 'true'
-        XR_BLOCK_KEYWORDS: 'trailer,alpha,beta,multiplayer,coming soon,release window'
+        XR_BLOCK_KEYWORDS: 'trailer,alpha,beta,multiplayer,coming soon,release window,preview,first look,hands-on,early access,demo'
         XR_GAMING_DOMAINS: 'roadtovr.com,uploadvr.com,mixed.reality.news'
       run: |
         python -m src.app.main
