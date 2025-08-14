@@ -1,0 +1,14 @@
+# Blocklist for immediate exclusion of recurring VR gaming posts
+# These patterns match specific URLs that frequently appear and should be blocked
+
+vr_gaming_posts:
+  - pattern: 'roadtovr\.com/forefront-open-alpha'
+    description: 'Forefront VR game alpha announcements'
+  - pattern: 'roadtovr\.com/lushfoil-photography-sim'
+    description: 'Lushfoil Photography Simulator VR game coverage'
+  - pattern: 'roadtovr\.com/exoshock-vr-shooter'
+    description: 'Exoshock VR shooter game updates'
+
+# Additional VR gaming patterns can be added here as needed
+# Pattern format: Use regex-compatible strings with proper escaping
+# Example: 'roadtovr\.com/game-name' matches roadtovr.com/game-name URLs
