@@ -66,9 +66,12 @@ class Settings(BaseSettings):
             "game review", "walkthrough", "let's play", "let us play", "trailer", "teaser",
             "DLC", "season pass", "patch notes", "speedrun", "esports", "tournament",
             "giveaway", "preorder", "pre-order", "merch", "skins", "loot", "boss fight",
-            "build guide", "weapon", "quest", "raid", "console", "PS5", "Xbox", "Switch"
+            "build guide", "weapon", "quest", "raid", "console", "PS5", "Xbox", "Switch",
+            
+            # XR content filtering (block early access and preview content)
+            "preview", "first look", "hands-on", "early access", "demo"
         ],
-        description="Keywords that exclude articles from gaming/entertainment posts"
+        description="Keywords that exclude articles from gaming/entertainment posts and XR preview content"
     )
     
     # Legacy keywords field (kept for backward compatibility)
