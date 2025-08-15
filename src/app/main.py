@@ -10,7 +10,6 @@ from pathlib import Path
 import yaml
 import feedparser
 from dateutil import parser as date_parser
-
 from .config import settings, SOURCES_PATH
 from .utils import fetch_url, clean_html, hash_item
 from .summarize import create_summary
@@ -24,7 +23,6 @@ logger = logging.getLogger(__name__)
 # Store for deduplication
 processed_articles = set()
 
-
 async def load_sources() -> Dict[str, List[Dict[str, str]]]:
     """Load RSS sources from YAML configuration."""
     try:
@@ -34,7 +32,6 @@ async def load_sources() -> Dict[str, List[Dict[str, str]]]:
     except Exception as e:
         logger.error(f"Failed to load sources: {e}")
         return {}
-
 
 async def fetch_feed_articles(feed_url: str, max_articles: int = 5) -> List[Dict[str, Any]]:
     """Fetch articles from a single RSS/Atom feed."""
@@ -86,7 +83,6 @@ async def fetch_feed_articles(feed_url: str, max_articles: int = 5) -> List[Dict
         logger.error(f"Error fetching feed {feed_url}: {e}")
         return []
 
-
 async def filter_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Filter articles by keywords and relevance."""
     filtered = []
@@ -103,7 +99,6 @@ async def filter_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]
                 break
                 
     return filtered
-
 
 async def deduplicate_articles(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Remove duplicate articles based on content hash and URL."""
@@ -138,7 +133,6 @@ async def deduplicate_articles(articles: List[Dict[str, Any]]) -> List[Dict[str,
     
     return unique_articles
 
-
 async def compose_telegram_messages(articles: List[Dict[str, Any]]) -> List[str]:
     """Compose separate Telegram messages for each article with simplified format."""
     if not articles:
@@ -172,45 +166,54 @@ async def compose_telegram_messages(articles: List[Dict[str, Any]]) -> List[str]
                 
     return messages
 
-
 async def send_telegram_message(message: str) -> bool:
     """Send message to Telegram channel using Bot API."""
-    try:
-        import requests
-        
-        # Skip sending if in dry run mode
-        if settings.dry_run:
-            logger.info("DRY RUN: Would send message to Telegram:")
-            logger.info("=" * 50)
-            logger.info(message)
-            logger.info("=" * 50)
-            return True
-        
-        url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
-        payload = {
-            'chat_id': settings.telegram_chat_id,
-            'text': message,
-            'parse_mode': 'Markdown',
-            'disable_web_page_preview': False  # Enable previews when not dry-run
-        }
-        
-        response = requests.post(url, json=payload, timeout=30)
-        response.raise_for_status()
-        
-        logger.info("Message sent successfully to Telegram")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Failed to send Telegram message: {e}")
-        return False
-
+    # DISABLED FOR APPROVAL MIGRATION - Always return True without sending
+    logger.info("TELEGRAM POSTING DISABLED - Would have sent message:")
+    logger.info("=" * 50)
+    logger.info(message)
+    logger.info("=" * 50)
+    return True
+    
+    # COMMENTED OUT - Original sending logic
+    # try:
+    #     import requests
+    #     
+    #     # Skip sending if in dry run mode
+    #     if settings.dry_run:
+    #         logger.info("DRY RUN: Would send message to Telegram:")
+    #         logger.info("=" * 50)
+    #         logger.info(message)
+    #         logger.info("=" * 50)
+    #         return True
+    #     
+    #     url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
+    #     payload = {
+    #         'chat_id': settings.telegram_chat_id,
+    #         'text': message,
+    #         'parse_mode': 'Markdown',
+    #         'disable_web_page_preview': False  # Enable previews when not dry-run
+    #     }
+    #     
+    #     response = requests.post(url, json=payload, timeout=30)
+    #     response.raise_for_status()
+    #     
+    #     logger.info("Message sent successfully to Telegram")
+    #     return True
+    #     
+    # except Exception as e:
+    #     logger.error(f"Failed to send Telegram message: {e}")
+    #     return False
 
 async def send_telegram_messages(messages: List[str]) -> bool:
     """Send multiple messages to Telegram channel."""
+    # DISABLED FOR APPROVAL MIGRATION - Skip actual sending
+    logger.info(f"TELEGRAM POSTING DISABLED - Would have sent {len(messages)} messages")
+    
     success_count = 0
     
     for i, message in enumerate(messages):
-        logger.info(f"Sending message {i + 1} of {len(messages)}")
+        logger.info(f"Message {i + 1} of {len(messages)} (NOT SENT):")
         success = await send_telegram_message(message)
         if success:
             success_count += 1
@@ -219,13 +222,12 @@ async def send_telegram_messages(messages: List[str]) -> bool:
         if i < len(messages) - 1:
             await asyncio.sleep(1)
     
-    logger.info(f"Successfully sent {success_count} of {len(messages)} messages")
+    logger.info(f"Processing completed: {success_count} of {len(messages)} messages (POSTING DISABLED)")
     return success_count == len(messages)
-
 
 async def main():
     """Main application workflow."""
-    logger.info("Starting Telegram News Poster")
+    logger.info("Starting Telegram News Poster (POSTING DISABLED FOR APPROVAL MIGRATION)")
     
     try:
         # Load sources
@@ -281,17 +283,18 @@ async def main():
             logger.info("No relevant news content to post and FORCE_RUN not set. Skipping.")
             return
         
+        # DISABLED FOR APPROVAL MIGRATION - Skip actual sending to Telegram
+        logger.info("TELEGRAM POSTING IS DISABLED - Processing completed without sending to channel")
         success = await send_telegram_messages(messages)
         
         if success:
-            logger.info("News posting completed successfully")
+            logger.info("News processing completed successfully (POSTING DISABLED)")
         else:
-            logger.error("Failed to send some messages")
+            logger.error("Failed to process some messages")
             
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
-
 
 if __name__ == "__main__":
     asyncio.run(main())
